@@ -1,0 +1,52 @@
+package com.nexus.fulfillment.infrastructure.config;
+
+import com.nexus.fulfillment.application.port.out.InventoryLedgerRepositoryPort;
+import com.nexus.fulfillment.application.port.out.InventoryRecordRepositoryPort;
+import com.nexus.fulfillment.application.port.out.ReservationRepositoryPort;
+import com.nexus.fulfillment.application.usecase.*;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class UseCaseConfig {
+
+    @Bean
+    public IntakeInventoryUseCase intakeInventoryUseCase(InventoryRecordRepositoryPort inventoryRecordRepositoryPort,
+                                                            InventoryLedgerRepositoryPort inventoryLedgerRepositoryPort) {
+        return new IntakeInventoryUseCase(inventoryRecordRepositoryPort, inventoryLedgerRepositoryPort);
+    }
+
+    @Bean
+    public ReserveInventoryUseCase reserveInventoryUseCase(InventoryRecordRepositoryPort inventoryRecordRepositoryPort,
+                                                              ReservationRepositoryPort reservationRepositoryPort,
+                                                              InventoryLedgerRepositoryPort inventoryLedgerRepositoryPort) {
+        return new ReserveInventoryUseCase(inventoryRecordRepositoryPort, reservationRepositoryPort,
+                inventoryLedgerRepositoryPort);
+    }
+
+    @Bean
+    public CommitReservationUseCase commitReservationUseCase(InventoryRecordRepositoryPort inventoryRecordRepositoryPort,
+                                                                ReservationRepositoryPort reservationRepositoryPort,
+                                                                InventoryLedgerRepositoryPort inventoryLedgerRepositoryPort) {
+        return new CommitReservationUseCase(inventoryRecordRepositoryPort, reservationRepositoryPort,
+                inventoryLedgerRepositoryPort);
+    }
+
+    @Bean
+    public ReleaseReservationUseCase releaseReservationUseCase(InventoryRecordRepositoryPort inventoryRecordRepositoryPort,
+                                                                  ReservationRepositoryPort reservationRepositoryPort,
+                                                                  InventoryLedgerRepositoryPort inventoryLedgerRepositoryPort) {
+        return new ReleaseReservationUseCase(inventoryRecordRepositoryPort, reservationRepositoryPort,
+                inventoryLedgerRepositoryPort);
+    }
+
+    @Bean
+    public GetInventoryUseCase getInventoryUseCase(InventoryRecordRepositoryPort inventoryRecordRepositoryPort) {
+        return new GetInventoryUseCase(inventoryRecordRepositoryPort);
+    }
+
+    @Bean
+    public GetReservationUseCase getReservationUseCase(ReservationRepositoryPort reservationRepositoryPort) {
+        return new GetReservationUseCase(reservationRepositoryPort);
+    }
+}
