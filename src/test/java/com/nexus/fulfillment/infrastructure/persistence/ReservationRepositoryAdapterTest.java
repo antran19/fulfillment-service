@@ -66,6 +66,23 @@ class ReservationRepositoryAdapterTest {
     }
 
     @Test
+    void findByOrderId_returnsEveryLineItemReservationForThatOrder() {
+        Reservation lineItem1 = Reservation.create("order-9:sku-1", "sku-1", "MAIN", 1);
+        Reservation lineItem2 = Reservation.create("order-9:sku-2", "sku-2", "MAIN", 2);
+        Reservation otherOrder = Reservation.create("order-10:sku-1", "sku-1", "MAIN", 1);
+        adapter.save(lineItem1);
+        adapter.save(lineItem2);
+        adapter.save(otherOrder);
+        entityManager.flush();
+        entityManager.clear();
+
+        List<Reservation> found = adapter.findByOrderId("order-9");
+
+        assertThat(found).extracting(Reservation::getId)
+                .containsExactlyInAnyOrder(lineItem1.getId(), lineItem2.getId());
+    }
+
+    @Test
     void findById_isEmptyForANonUuidId() {
         assertThat(adapter.findById("not-a-uuid")).isEmpty();
     }

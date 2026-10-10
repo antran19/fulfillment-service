@@ -48,6 +48,11 @@ public class ReservationRepositoryAdapter implements ReservationRepositoryPort {
                 .map(this::toDomain).toList();
     }
 
+    @Override
+    public List<Reservation> findByOrderId(String orderId) {
+        return jpaRepository.findByReferenceIdStartingWith(orderId + ":").stream().map(this::toDomain).toList();
+    }
+
     private ReservationJpaEntity toEntity(Reservation r) {
         return new ReservationJpaEntity(UUID.fromString(r.getId()), r.getReferenceId(), r.getSkuId(),
                 r.getWarehouseId(), r.getQuantity(), r.getStatus().name(), r.getExpiresAt(), r.getCreatedAt());

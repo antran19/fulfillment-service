@@ -1,5 +1,6 @@
 package com.nexus.fulfillment.infrastructure.config;
 
+import com.nexus.fulfillment.application.port.out.EventPublisherPort;
 import com.nexus.fulfillment.application.port.out.InventoryLedgerRepositoryPort;
 import com.nexus.fulfillment.application.port.out.InventoryRecordRepositoryPort;
 import com.nexus.fulfillment.application.port.out.ReservationRepositoryPort;
@@ -48,5 +49,28 @@ public class UseCaseConfig {
     @Bean
     public GetReservationUseCase getReservationUseCase(ReservationRepositoryPort reservationRepositoryPort) {
         return new GetReservationUseCase(reservationRepositoryPort);
+    }
+
+    @Bean
+    public ReserveForOrderUseCase reserveForOrderUseCase(ReserveInventoryUseCase reserveInventoryUseCase,
+                                                           EventPublisherPort eventPublisherPort) {
+        return new ReserveForOrderUseCase(reserveInventoryUseCase, eventPublisherPort);
+    }
+
+    @Bean
+    public FailOrderReservationUseCase failOrderReservationUseCase(EventPublisherPort eventPublisherPort) {
+        return new FailOrderReservationUseCase(eventPublisherPort);
+    }
+
+    @Bean
+    public CommitReservationsForOrderUseCase commitReservationsForOrderUseCase(
+            ReservationRepositoryPort reservationRepositoryPort, CommitReservationUseCase commitReservationUseCase) {
+        return new CommitReservationsForOrderUseCase(reservationRepositoryPort, commitReservationUseCase);
+    }
+
+    @Bean
+    public ReleaseReservationsForOrderUseCase releaseReservationsForOrderUseCase(
+            ReservationRepositoryPort reservationRepositoryPort, ReleaseReservationUseCase releaseReservationUseCase) {
+        return new ReleaseReservationsForOrderUseCase(reservationRepositoryPort, releaseReservationUseCase);
     }
 }

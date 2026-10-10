@@ -11,4 +11,5 @@ import java.util.UUID;
 public interface ReservationJpaRepository extends JpaRepository<ReservationJpaEntity, UUID> {
     Optional<ReservationJpaEntity> findByReferenceId(String referenceId);
     List<ReservationJpaEntity> findByStatusAndExpiresAtLessThanEqual(String status, Instant now);
+    List<ReservationJpaEntity> findByReferenceIdStartingWith(String referenceIdPrefix);
 }

@@ -20,7 +20,7 @@
     <mapstruct.version>1.6.2</mapstruct.version>
     <testcontainers.version>1.20.1</testcontainers.version>
     <springdoc.version>2.6.0</springdoc.version>
-    <common-libs.version>1.7.0</common-libs.version>
+    <common-libs.version>1.8.0</common-libs.version>
   </properties>
 
   <dependencyManagement>
@@ -50,8 +50,6 @@
   </dependencyManagement>
 
   <dependencies>
-    <!-- No common-events / spring-kafka yet: this first slice is a standalone
-         Inventory core with no cross-service wiring (see HANDOFF.md). -->
     <dependency>
       <groupId>com.nexus</groupId>
       <artifactId>common-core</artifactId>
@@ -64,8 +62,17 @@
     </dependency>
     <dependency>
       <groupId>com.nexus</groupId>
+      <artifactId>common-events</artifactId>
+      <version>${common-libs.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.nexus</groupId>
       <artifactId>common-security</artifactId>
       <version>${common-libs.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.kafka</groupId>
+      <artifactId>spring-kafka</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -127,6 +134,11 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>postgresql</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>kafka</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

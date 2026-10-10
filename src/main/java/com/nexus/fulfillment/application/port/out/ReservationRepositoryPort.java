@@ -11,4 +11,9 @@ public interface ReservationRepositoryPort {
     Optional<Reservation> findById(String id);
     Optional<Reservation> findByReferenceId(String referenceId);
     List<Reservation> findExpiredPending(Instant now);
+
+    // Order-level reservations are always made with referenceId = "<orderId>:<skuId>" (see
+    // ReserveForOrderUseCase) -- this is how later, separate events (OrderPaid/OrderCancelled,
+    // which only carry orderId) can still find every line item's reservation for that order.
+    List<Reservation> findByOrderId(String orderId);
 }
