@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.fulfillment.application.exception.InsufficientInventoryException;
 import com.nexus.fulfillment.application.usecase.CommitReservationsForOrderUseCase;
 import com.nexus.fulfillment.application.usecase.FailOrderReservationUseCase;
+import com.nexus.fulfillment.application.usecase.IntakeForReturnUseCase;
 import com.nexus.fulfillment.application.usecase.ReleaseReservationsForOrderUseCase;
 import com.nexus.fulfillment.application.usecase.ReserveForOrderUseCase;
 import org.junit.jupiter.api.Test;
@@ -22,8 +23,10 @@ class CommerceEventsListenerTest {
             mock(CommitReservationsForOrderUseCase.class);
     private final ReleaseReservationsForOrderUseCase releaseReservationsForOrderUseCase =
             mock(ReleaseReservationsForOrderUseCase.class);
+    private final IntakeForReturnUseCase intakeForReturnUseCase = mock(IntakeForReturnUseCase.class);
     private final CommerceEventsListener listener = new CommerceEventsListener(objectMapper, reserveForOrderUseCase,
-            failOrderReservationUseCase, commitReservationsForOrderUseCase, releaseReservationsForOrderUseCase);
+            failOrderReservationUseCase, commitReservationsForOrderUseCase, releaseReservationsForOrderUseCase,
+            intakeForReturnUseCase);
 
     @Test
     void onMessage_reservationRequested_reservesForTheOrder() {
@@ -71,6 +74,32 @@ class CommerceEventsListenerTest {
     }
 
     @Test
+    void onMessage_orderReturnReceived_intakesTheReturnedItems() {
+        String payload = "{\"eventId\":\"e-8\",\"eventType\":\"OrderReturnReceived\","
+                + "\"occurredAt\":\"2026-01-01T00:00:00Z\",\"aggregateId\":\"order-8\",\"orderId\":\"order-8\","
+                + "\"items\":[{\"skuId\":\"sku-1\",\"quantity\":2}]}";
+
+        listener.onMessage(payload);
+
+        verify(intakeForReturnUseCase).intakeForReturn(any());
+    }
+
+    @Test
+    void onMessage_orderRefunded_isIgnored() {
+        // commerce-service's RefundOrderUseCase handles the restock decision itself (publishing
+        // OrderReturnReceivedEvent directly when the order hadn't shipped) -- this event is purely
+        // informational on this side, nothing here needs to react to it.
+        String payload = "{\"eventId\":\"e-9\",\"eventType\":\"OrderRefunded\",\"occurredAt\":\"2026-01-01T00:00:00Z\","
+                + "\"aggregateId\":\"order-9\",\"orderId\":\"order-9\",\"buyerId\":\"buyer-1\",\"amount\":100.00,"
+                + "\"reason\":\"test\",\"shipped\":false}";
+
+        listener.onMessage(payload);
+
+        verifyNoInteractions(reserveForOrderUseCase, failOrderReservationUseCase, commitReservationsForOrderUseCase,
+                releaseReservationsForOrderUseCase, intakeForReturnUseCase);
+    }
+
+    @Test
     void onMessage_unrelatedEventType_doesNothing() {
         String payload = "{\"eventId\":\"e-5\",\"eventType\":\"SomethingElse\",\"occurredAt\":\"2026-01-01T00:00:00Z\","
                 + "\"aggregateId\":\"x\"}";
@@ -78,7 +107,7 @@ class CommerceEventsListenerTest {
         listener.onMessage(payload);
 
         verifyNoInteractions(reserveForOrderUseCase, failOrderReservationUseCase, commitReservationsForOrderUseCase,
-                releaseReservationsForOrderUseCase);
+                releaseReservationsForOrderUseCase, intakeForReturnUseCase);
     }
 
     @Test

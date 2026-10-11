@@ -73,4 +73,9 @@ public class UseCaseConfig {
             ReservationRepositoryPort reservationRepositoryPort, ReleaseReservationUseCase releaseReservationUseCase) {
         return new ReleaseReservationsForOrderUseCase(reservationRepositoryPort, releaseReservationUseCase);
     }
+
+    @Bean
+    public IntakeForReturnUseCase intakeForReturnUseCase(IntakeInventoryUseCase intakeInventoryUseCase) {
+        return new IntakeForReturnUseCase(intakeInventoryUseCase);
+    }
 }
