@@ -8,6 +8,7 @@ import com.nexus.fulfillment.application.usecase.GetInventoryUseCase;
 import com.nexus.fulfillment.application.usecase.IntakeInventoryUseCase;
 import com.nexus.fulfillment.domain.model.Warehouse;
 import jakarta.validation.Valid;
+import com.nexus.common.security.RequiresPrivilege;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,6 +27,7 @@ public class InventoryController {
         this.mapper = mapper;
     }
 
+    @RequiresPrivilege("INVENTORY.MANAGE")
     @PostMapping("/intake")
     public ResponseEntity<ApiResponse<Void>> intake(@Valid @RequestBody IntakeRequest request) {
         String warehouseId = request.warehouseId() != null ? request.warehouseId() : Warehouse.DEFAULT_ID;
@@ -33,6 +35,7 @@ public class InventoryController {
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 
+    @RequiresPrivilege("INVENTORY.VIEW")
     @GetMapping("/{skuId}")
     public ResponseEntity<ApiResponse<InventoryResponse>> get(@PathVariable String skuId,
             @RequestParam(required = false) String warehouseId) {

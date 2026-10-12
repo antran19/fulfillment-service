@@ -25,7 +25,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(InventoryController.class)
 @Import({GlobalExceptionHandler.class, FulfillmentApiMapperImpl.class, SecurityConfig.class,
-        JwtAuthenticationFilter.class, JwtTokenProvider.class})
+        JwtAuthenticationFilter.class, JwtTokenProvider.class,
+        com.nexus.common.security.PrivilegeAuthorizationAspect.class})
+@org.springframework.boot.autoconfigure.ImportAutoConfiguration(org.springframework.boot.autoconfigure.aop.AopAutoConfiguration.class)
 class InventoryControllerTest {
 
     @Autowired private MockMvc mockMvc;
@@ -35,7 +37,7 @@ class InventoryControllerTest {
     @MockBean private GetInventoryUseCase getInventoryUseCase;
 
     private String token() {
-        return jwtTokenProvider.generateToken("caller-1", "ADMIN", List.of(), "TRUSTED");
+        return jwtTokenProvider.generateToken("caller-1", "ADMIN", List.of("INVENTORY.MANAGE", "INVENTORY.VIEW"), "TRUSTED");
     }
 
     @Test
@@ -68,5 +70,22 @@ class InventoryControllerTest {
                         .content("""
                                 {"skuId":"sku-1","quantity":0}"""))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void view_returns403WithoutTheViewPrivilege() throws Exception {
+        String noPrivileges = jwtTokenProvider.generateToken("caller-1", "BUYER", List.of(), "TRUSTED");
+
+        mockMvc.perform(get("/api/v1/inventory/sku-1").header("Authorization", "Bearer " + noPrivileges))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void manage_returns403WithoutTheManagePrivilege() throws Exception {
+        String viewOnly = jwtTokenProvider.generateToken("caller-1", "SELLER", List.of("INVENTORY.VIEW"), "TRUSTED");
+
+        mockMvc.perform(post("/api/v1/inventory/intake").header("Authorization", "Bearer " + viewOnly)
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON).content("{\"skuId\":\"sku-1\",\"quantity\":1}"))
+                .andExpect(status().isForbidden());
     }
 }

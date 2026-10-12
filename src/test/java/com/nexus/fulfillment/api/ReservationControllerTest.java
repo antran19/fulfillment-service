@@ -29,7 +29,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(ReservationController.class)
 @Import({GlobalExceptionHandler.class, FulfillmentApiMapperImpl.class, SecurityConfig.class,
-        JwtAuthenticationFilter.class, JwtTokenProvider.class})
+        JwtAuthenticationFilter.class, JwtTokenProvider.class,
+        com.nexus.common.security.PrivilegeAuthorizationAspect.class})
+@org.springframework.boot.autoconfigure.ImportAutoConfiguration(org.springframework.boot.autoconfigure.aop.AopAutoConfiguration.class)
 class ReservationControllerTest {
 
     @Autowired private MockMvc mockMvc;
@@ -41,7 +43,7 @@ class ReservationControllerTest {
     @MockBean private GetReservationUseCase getReservationUseCase;
 
     private String token() {
-        return jwtTokenProvider.generateToken("caller-1", "SELLER", List.of(), "TRUSTED");
+        return jwtTokenProvider.generateToken("caller-1", "SELLER", List.of("INVENTORY.MANAGE", "INVENTORY.VIEW"), "TRUSTED");
     }
 
     @Test
@@ -92,5 +94,22 @@ class ReservationControllerTest {
     void release_returns200() throws Exception {
         mockMvc.perform(post("/api/v1/reservations/r-1/release").header("Authorization", "Bearer " + token()))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void view_returns403WithoutTheViewPrivilege() throws Exception {
+        String noPrivileges = jwtTokenProvider.generateToken("caller-1", "BUYER", List.of(), "TRUSTED");
+
+        mockMvc.perform(get("/api/v1/reservations/res-1").header("Authorization", "Bearer " + noPrivileges))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void manage_returns403WithoutTheManagePrivilege() throws Exception {
+        String viewOnly = jwtTokenProvider.generateToken("caller-1", "SELLER", List.of("INVENTORY.VIEW"), "TRUSTED");
+
+        mockMvc.perform(post("/api/v1/reservations/res-1/commit").header("Authorization", "Bearer " + viewOnly)
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isForbidden());
     }
 }

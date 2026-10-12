@@ -12,6 +12,7 @@ import com.nexus.fulfillment.domain.model.Reservation;
 import com.nexus.fulfillment.domain.model.Warehouse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import com.nexus.common.security.RequiresPrivilege;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,6 +37,7 @@ public class ReservationController {
         this.mapper = mapper;
     }
 
+    @RequiresPrivilege("INVENTORY.MANAGE")
     @PostMapping
     public ResponseEntity<ApiResponse<ReservationResponse>> reserve(@Valid @RequestBody ReserveRequest request) {
         String warehouseId = request.warehouseId() != null ? request.warehouseId() : Warehouse.DEFAULT_ID;
@@ -44,17 +46,20 @@ public class ReservationController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(mapper.toResponse(reservation)));
     }
 
+    @RequiresPrivilege("INVENTORY.VIEW")
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<ReservationResponse>> get(@PathVariable String id) {
         return ResponseEntity.ok(ApiResponse.ok(mapper.toResponse(getReservationUseCase.get(id))));
     }
 
+    @RequiresPrivilege("INVENTORY.MANAGE")
     @PostMapping("/{id}/commit")
     public ResponseEntity<ApiResponse<Void>> commit(@PathVariable String id) {
         commitReservationUseCase.commit(id);
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 
+    @RequiresPrivilege("INVENTORY.MANAGE")
     @PostMapping("/{id}/release")
     public ResponseEntity<ApiResponse<Void>> release(@PathVariable String id) {
         releaseReservationUseCase.release(id);
