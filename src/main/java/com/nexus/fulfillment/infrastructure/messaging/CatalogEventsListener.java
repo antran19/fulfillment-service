@@ -1,10 +1,9 @@
 package com.nexus.fulfillment.infrastructure.messaging;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.events.ProductCreatedEvent;
 import com.nexus.fulfillment.application.usecase.RegisterProductStockUseCase;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
@@ -14,7 +13,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class CatalogEventsListener {
 
-    private static final Logger log = LoggerFactory.getLogger(CatalogEventsListener.class);
 
     private final ObjectMapper objectMapper;
     private final RegisterProductStockUseCase registerProductStockUseCase;
@@ -24,17 +22,15 @@ public class CatalogEventsListener {
         this.registerProductStockUseCase = registerProductStockUseCase;
     }
 
+    // Exceptions are NOT caught here on purpose: KafkaErrorHandlingConfig retries them, then
+    // moves the record to the dead-letter topic instead of losing it.
     @KafkaListener(topics = "catalog-events")
-    public void onMessage(String rawPayload) {
-        try {
-            String eventType = objectMapper.readTree(rawPayload).path("eventType").asText();
-            if ("ProductCreated".equals(eventType)) {
-                ProductCreatedEvent event = objectMapper.readValue(rawPayload, ProductCreatedEvent.class);
-                registerProductStockUseCase.register(event.getProductId(), event.getSellerId(),
-                        event.getInitialStock());
-            }
-        } catch (Exception e) {
-            log.error("Failed to process catalog-events message: {}", rawPayload, e);
+    public void onMessage(String rawPayload) throws JsonProcessingException {
+        String eventType = objectMapper.readTree(rawPayload).path("eventType").asText();
+        if ("ProductCreated".equals(eventType)) {
+            ProductCreatedEvent event = objectMapper.readValue(rawPayload, ProductCreatedEvent.class);
+            registerProductStockUseCase.register(event.getProductId(), event.getSellerId(),
+                    event.getInitialStock());
         }
     }
 }

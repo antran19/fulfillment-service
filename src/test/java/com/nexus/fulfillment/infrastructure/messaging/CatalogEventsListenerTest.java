@@ -1,11 +1,12 @@
 package com.nexus.fulfillment.infrastructure.messaging;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.common.events.ProductCreatedEvent;
 import com.nexus.fulfillment.application.usecase.RegisterProductStockUseCase;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -32,7 +33,7 @@ class CatalogEventsListenerTest {
     }
 
     @Test
-    void onMessage_anOldProductCreatedWithoutSellerOrStockStillParses() {
+    void onMessage_anOldProductCreatedWithoutSellerOrStockStillParses() throws Exception {
         String payload = "{\"eventId\":\"e-1\",\"eventType\":\"ProductCreated\",\"occurredAt\":\"2026-01-01T00:00:00Z\","
                 + "\"aggregateId\":\"p-1\",\"productId\":\"p-1\",\"name\":\"Watch\",\"categoryId\":\"cat-1\"}";
 
@@ -42,7 +43,7 @@ class CatalogEventsListenerTest {
     }
 
     @Test
-    void onMessage_ignoresOtherCatalogEvents() {
+    void onMessage_ignoresOtherCatalogEvents() throws Exception {
         String payload = "{\"eventId\":\"e-2\",\"eventType\":\"ProductStatusChanged\","
                 + "\"occurredAt\":\"2026-01-01T00:00:00Z\",\"aggregateId\":\"p-1\"}";
 
@@ -52,12 +53,12 @@ class CatalogEventsListenerTest {
     }
 
     @Test
-    void onMessage_aFailingUseCaseOrBadPayloadDoesNotThrow() {
+    void onMessage_failingUseCaseOrBadPayloadPropagatesToTheErrorHandler() throws Exception {
         doThrow(new IllegalStateException("db down")).when(registerProductStockUseCase).register(any(), any(), anyInt());
         String payload = "{\"eventId\":\"e-3\",\"eventType\":\"ProductCreated\",\"occurredAt\":\"2026-01-01T00:00:00Z\","
                 + "\"aggregateId\":\"p-1\",\"productId\":\"p-1\",\"sellerId\":\"s-1\",\"initialStock\":1}";
 
-        assertThatCode(() -> listener.onMessage(payload)).doesNotThrowAnyException();
-        assertThatCode(() -> listener.onMessage("not json")).doesNotThrowAnyException();
+        assertThatThrownBy(() -> listener.onMessage(payload)).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> listener.onMessage("not json")).isInstanceOf(JsonProcessingException.class);
     }
 }

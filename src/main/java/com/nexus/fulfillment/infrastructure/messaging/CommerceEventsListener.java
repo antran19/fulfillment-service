@@ -11,8 +11,6 @@ import com.nexus.fulfillment.application.usecase.FailOrderReservationUseCase;
 import com.nexus.fulfillment.application.usecase.IntakeForReturnUseCase;
 import com.nexus.fulfillment.application.usecase.ReleaseReservationsForOrderUseCase;
 import com.nexus.fulfillment.application.usecase.ReserveForOrderUseCase;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
@@ -23,7 +21,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class CommerceEventsListener {
 
-    private static final Logger log = LoggerFactory.getLogger(CommerceEventsListener.class);
 
     private final ObjectMapper objectMapper;
     private final ReserveForOrderUseCase reserveForOrderUseCase;
@@ -45,34 +42,32 @@ public class CommerceEventsListener {
         this.intakeForReturnUseCase = intakeForReturnUseCase;
     }
 
+    // Exceptions are NOT caught here on purpose: KafkaErrorHandlingConfig retries them, then
+    // moves the record to the dead-letter topic instead of losing it.
     @KafkaListener(topics = "commerce-events")
-    public void onMessage(String rawPayload) {
-        try {
-            String eventType = objectMapper.readTree(rawPayload).path("eventType").asText();
-            switch (eventType) {
-                case "InventoryReservationRequested" -> onReservationRequested(rawPayload);
-                case "OrderPaid" -> {
-                    OrderPaidEvent event = objectMapper.readValue(rawPayload, OrderPaidEvent.class);
-                    commitReservationsForOrderUseCase.commitForOrder(event.getOrderId());
-                }
-                case "OrderCancelled" -> {
-                    OrderCancelledEvent event = objectMapper.readValue(rawPayload, OrderCancelledEvent.class);
-                    releaseReservationsForOrderUseCase.releaseForOrder(event.getOrderId());
-                }
-                // Restocking an order's items -- whether commerce-service fires this right away
-                // (refund on an order that never shipped) or later once an Admin confirms a
-                // shipped order's goods actually came back (ReturnRequest -> receive) -- is the
-                // same operation from here: intake, not release. A PAID order's reservation was
-                // already COMMITTED (stock permanently decremented), so there's no PENDING hold
-                // left to release; see RefundOrderUseCase/ReceiveReturnUseCase in commerce-service.
-                case "OrderReturnReceived" -> {
-                    OrderReturnReceivedEvent event = objectMapper.readValue(rawPayload, OrderReturnReceivedEvent.class);
-                    intakeForReturnUseCase.intakeForReturn(event.getItems());
-                }
-                default -> { /* irrelevant to this service */ }
+    public void onMessage(String rawPayload) throws Exception {
+        String eventType = objectMapper.readTree(rawPayload).path("eventType").asText();
+        switch (eventType) {
+            case "InventoryReservationRequested" -> onReservationRequested(rawPayload);
+            case "OrderPaid" -> {
+                OrderPaidEvent event = objectMapper.readValue(rawPayload, OrderPaidEvent.class);
+                commitReservationsForOrderUseCase.commitForOrder(event.getOrderId());
             }
-        } catch (Exception e) {
-            log.error("Failed to process commerce-events message: {}", rawPayload, e);
+            case "OrderCancelled" -> {
+                OrderCancelledEvent event = objectMapper.readValue(rawPayload, OrderCancelledEvent.class);
+                releaseReservationsForOrderUseCase.releaseForOrder(event.getOrderId());
+            }
+            // Restocking an order's items -- whether commerce-service fires this right away
+            // (refund on an order that never shipped) or later once an Admin confirms a
+            // shipped order's goods actually came back (ReturnRequest -> receive) -- is the
+            // same operation from here: intake, not release. A PAID order's reservation was
+            // already COMMITTED (stock permanently decremented), so there's no PENDING hold
+            // left to release; see RefundOrderUseCase/ReceiveReturnUseCase in commerce-service.
+            case "OrderReturnReceived" -> {
+                OrderReturnReceivedEvent event = objectMapper.readValue(rawPayload, OrderReturnReceivedEvent.class);
+                intakeForReturnUseCase.intakeForReturn(event.getItems());
+            }
+            default -> { /* irrelevant to this service */ }
         }
     }
 

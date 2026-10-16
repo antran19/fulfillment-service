@@ -1,5 +1,6 @@
 package com.nexus.fulfillment.infrastructure.messaging;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.fulfillment.application.exception.InsufficientInventoryException;
 import com.nexus.fulfillment.application.usecase.CommitReservationsForOrderUseCase;
@@ -9,6 +10,7 @@ import com.nexus.fulfillment.application.usecase.ReleaseReservationsForOrderUseC
 import com.nexus.fulfillment.application.usecase.ReserveForOrderUseCase;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -29,7 +31,7 @@ class CommerceEventsListenerTest {
             intakeForReturnUseCase);
 
     @Test
-    void onMessage_reservationRequested_reservesForTheOrder() {
+    void onMessage_reservationRequested_reservesForTheOrder() throws Exception {
         String payload = "{\"eventId\":\"e-1\",\"eventType\":\"InventoryReservationRequested\","
                 + "\"occurredAt\":\"2026-01-01T00:00:00Z\",\"aggregateId\":\"order-1\",\"orderId\":\"order-1\","
                 + "\"items\":[{\"skuId\":\"sku-1\",\"quantity\":2}]}";
@@ -41,7 +43,7 @@ class CommerceEventsListenerTest {
     }
 
     @Test
-    void onMessage_reservationRequested_whenInsufficientStock_callsFail() {
+    void onMessage_reservationRequested_whenInsufficientStock_callsFail() throws Exception {
         String payload = "{\"eventId\":\"e-2\",\"eventType\":\"InventoryReservationRequested\","
                 + "\"occurredAt\":\"2026-01-01T00:00:00Z\",\"aggregateId\":\"order-2\",\"orderId\":\"order-2\","
                 + "\"items\":[{\"skuId\":\"sku-1\",\"quantity\":99}]}";
@@ -54,7 +56,7 @@ class CommerceEventsListenerTest {
     }
 
     @Test
-    void onMessage_orderPaid_commitsForTheOrder() {
+    void onMessage_orderPaid_commitsForTheOrder() throws Exception {
         String payload = "{\"eventId\":\"e-3\",\"eventType\":\"OrderPaid\",\"occurredAt\":\"2026-01-01T00:00:00Z\","
                 + "\"aggregateId\":\"order-3\",\"orderId\":\"order-3\",\"buyerId\":\"buyer-1\",\"amount\":100.00}";
 
@@ -64,7 +66,7 @@ class CommerceEventsListenerTest {
     }
 
     @Test
-    void onMessage_orderCancelled_releasesForTheOrder() {
+    void onMessage_orderCancelled_releasesForTheOrder() throws Exception {
         String payload = "{\"eventId\":\"e-4\",\"eventType\":\"OrderCancelled\",\"occurredAt\":\"2026-01-01T00:00:00Z\","
                 + "\"aggregateId\":\"order-4\",\"orderId\":\"order-4\",\"reason\":\"BUYER_REQUESTED\"}";
 
@@ -74,7 +76,7 @@ class CommerceEventsListenerTest {
     }
 
     @Test
-    void onMessage_orderReturnReceived_intakesTheReturnedItems() {
+    void onMessage_orderReturnReceived_intakesTheReturnedItems() throws Exception {
         String payload = "{\"eventId\":\"e-8\",\"eventType\":\"OrderReturnReceived\","
                 + "\"occurredAt\":\"2026-01-01T00:00:00Z\",\"aggregateId\":\"order-8\",\"orderId\":\"order-8\","
                 + "\"items\":[{\"skuId\":\"sku-1\",\"quantity\":2}]}";
@@ -85,7 +87,7 @@ class CommerceEventsListenerTest {
     }
 
     @Test
-    void onMessage_orderRefunded_isIgnored() {
+    void onMessage_orderRefunded_isIgnored() throws Exception {
         // commerce-service's RefundOrderUseCase handles the restock decision itself (publishing
         // OrderReturnReceivedEvent directly when the order hadn't shipped) -- this event is purely
         // informational on this side, nothing here needs to react to it.
@@ -100,7 +102,7 @@ class CommerceEventsListenerTest {
     }
 
     @Test
-    void onMessage_unrelatedEventType_doesNothing() {
+    void onMessage_unrelatedEventType_doesNothing() throws Exception {
         String payload = "{\"eventId\":\"e-5\",\"eventType\":\"SomethingElse\",\"occurredAt\":\"2026-01-01T00:00:00Z\","
                 + "\"aggregateId\":\"x\"}";
 
@@ -111,7 +113,8 @@ class CommerceEventsListenerTest {
     }
 
     @Test
-    void onMessage_malformedPayload_doesNotThrow() {
-        assertThatCode(() -> listener.onMessage("{not valid json")).doesNotThrowAnyException();
+    void onMessage_malformedPayload_throwsSoItGoesToDeadLetterTopic() throws Exception {
+        assertThatThrownBy(() -> listener.onMessage("{not valid json"))
+                .isInstanceOf(JsonProcessingException.class);
     }
 }
