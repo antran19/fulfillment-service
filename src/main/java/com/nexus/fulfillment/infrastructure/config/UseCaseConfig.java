@@ -3,6 +3,7 @@ package com.nexus.fulfillment.infrastructure.config;
 import com.nexus.fulfillment.application.port.out.EventPublisherPort;
 import com.nexus.fulfillment.application.port.out.InventoryLedgerRepositoryPort;
 import com.nexus.fulfillment.application.port.out.InventoryRecordRepositoryPort;
+import com.nexus.fulfillment.application.port.out.ProductStockOwnerRepositoryPort;
 import com.nexus.fulfillment.application.port.out.ReservationRepositoryPort;
 import com.nexus.fulfillment.application.usecase.*;
 import org.springframework.context.annotation.Bean;
@@ -72,6 +73,20 @@ public class UseCaseConfig {
     public ReleaseReservationsForOrderUseCase releaseReservationsForOrderUseCase(
             ReservationRepositoryPort reservationRepositoryPort, ReleaseReservationUseCase releaseReservationUseCase) {
         return new ReleaseReservationsForOrderUseCase(reservationRepositoryPort, releaseReservationUseCase);
+    }
+
+    @Bean
+    public RegisterProductStockUseCase registerProductStockUseCase(
+            ProductStockOwnerRepositoryPort productStockOwnerRepositoryPort,
+            IntakeInventoryUseCase intakeInventoryUseCase) {
+        return new RegisterProductStockUseCase(productStockOwnerRepositoryPort, intakeInventoryUseCase);
+    }
+
+    @Bean
+    public RestockInventoryUseCase restockInventoryUseCase(
+            ProductStockOwnerRepositoryPort productStockOwnerRepositoryPort,
+            IntakeInventoryUseCase intakeInventoryUseCase) {
+        return new RestockInventoryUseCase(productStockOwnerRepositoryPort, intakeInventoryUseCase);
     }
 
     @Bean

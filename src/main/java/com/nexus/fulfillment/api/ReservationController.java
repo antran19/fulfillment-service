@@ -41,7 +41,7 @@ public class ReservationController {
     @PostMapping
     public ResponseEntity<ApiResponse<ReservationResponse>> reserve(@Valid @RequestBody ReserveRequest request) {
         String warehouseId = request.warehouseId() != null ? request.warehouseId() : Warehouse.DEFAULT_ID;
-        Reservation reservation = reserveInventoryUseCase.reserve(request.referenceId(), request.skuId(),
+        Reservation reservation = reserveInventoryUseCase.reserve(request.referenceId(), request.productId(),
                 warehouseId, request.quantity());
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(mapper.toResponse(reservation)));
     }

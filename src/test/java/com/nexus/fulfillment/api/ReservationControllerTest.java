@@ -55,7 +55,7 @@ class ReservationControllerTest {
                         .header("Authorization", "Bearer " + token())
                         .contentType(APPLICATION_JSON)
                         .content("""
-                                {"referenceId":"order-1:sku-1","skuId":"sku-1","warehouseId":"MAIN","quantity":2}"""))
+                                {"referenceId":"order-1:sku-1","productId":"sku-1","warehouseId":"MAIN","quantity":2}"""))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.referenceId").value("order-1:sku-1"))
                 .andExpect(jsonPath("$.data.status").value("PENDING"));
@@ -70,7 +70,7 @@ class ReservationControllerTest {
                         .header("Authorization", "Bearer " + token())
                         .contentType(APPLICATION_JSON)
                         .content("""
-                                {"referenceId":"order-1:sku-1","skuId":"sku-1","warehouseId":"MAIN","quantity":2}"""))
+                                {"referenceId":"order-1:sku-1","productId":"sku-1","warehouseId":"MAIN","quantity":2}"""))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error.code").value("INSUFFICIENT_INVENTORY"));
     }
@@ -80,7 +80,7 @@ class ReservationControllerTest {
         mockMvc.perform(post("/api/v1/reservations")
                         .contentType(APPLICATION_JSON)
                         .content("""
-                                {"referenceId":"order-1:sku-1","skuId":"sku-1","quantity":2}"""))
+                                {"referenceId":"order-1:sku-1","productId":"sku-1","quantity":2}"""))
                 .andExpect(status().isUnauthorized());
     }
 
