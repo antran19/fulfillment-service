@@ -17,13 +17,16 @@ public class ReleaseReservationUseCase {
     private final InventoryRecordRepositoryPort inventoryRecordRepositoryPort;
     private final ReservationRepositoryPort reservationRepositoryPort;
     private final InventoryLedgerRepositoryPort inventoryLedgerRepositoryPort;
+    private final InventoryLevelNotifier inventoryLevelNotifier;
 
     public ReleaseReservationUseCase(InventoryRecordRepositoryPort inventoryRecordRepositoryPort,
                                       ReservationRepositoryPort reservationRepositoryPort,
-                                      InventoryLedgerRepositoryPort inventoryLedgerRepositoryPort) {
+                                      InventoryLedgerRepositoryPort inventoryLedgerRepositoryPort,
+                                      InventoryLevelNotifier inventoryLevelNotifier) {
         this.inventoryRecordRepositoryPort = inventoryRecordRepositoryPort;
         this.reservationRepositoryPort = reservationRepositoryPort;
         this.inventoryLedgerRepositoryPort = inventoryLedgerRepositoryPort;
+        this.inventoryLevelNotifier = inventoryLevelNotifier;
     }
 
     @Transactional
@@ -41,5 +44,6 @@ public class ReleaseReservationUseCase {
         inventoryLedgerRepositoryPort.record(InventoryLedgerEntry.record(LedgerMovementType.RELEASE,
                 reservation.getSkuId(), reservation.getWarehouseId(), reservation.getQuantity(),
                 reservation.getReferenceId()));
+        inventoryLevelNotifier.stockChanged(reservation.getSkuId(), reservation.getWarehouseId());
     }
 }

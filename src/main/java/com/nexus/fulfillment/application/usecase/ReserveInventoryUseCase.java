@@ -18,13 +18,16 @@ public class ReserveInventoryUseCase {
     private final InventoryRecordRepositoryPort inventoryRecordRepositoryPort;
     private final ReservationRepositoryPort reservationRepositoryPort;
     private final InventoryLedgerRepositoryPort inventoryLedgerRepositoryPort;
+    private final InventoryLevelNotifier inventoryLevelNotifier;
 
     public ReserveInventoryUseCase(InventoryRecordRepositoryPort inventoryRecordRepositoryPort,
                                     ReservationRepositoryPort reservationRepositoryPort,
-                                    InventoryLedgerRepositoryPort inventoryLedgerRepositoryPort) {
+                                    InventoryLedgerRepositoryPort inventoryLedgerRepositoryPort,
+                                    InventoryLevelNotifier inventoryLevelNotifier) {
         this.inventoryRecordRepositoryPort = inventoryRecordRepositoryPort;
         this.reservationRepositoryPort = reservationRepositoryPort;
         this.inventoryLedgerRepositoryPort = inventoryLedgerRepositoryPort;
+        this.inventoryLevelNotifier = inventoryLevelNotifier;
     }
 
     // Idempotent for a repeated referenceId under SEQUENTIAL retries (the realistic case: a
@@ -56,6 +59,7 @@ public class ReserveInventoryUseCase {
         Reservation reservation = reservationRepositoryPort.save(Reservation.create(referenceId, skuId, warehouseId, quantity));
         inventoryLedgerRepositoryPort.record(
                 InventoryLedgerEntry.record(LedgerMovementType.RESERVE, skuId, warehouseId, quantity, referenceId));
+        inventoryLevelNotifier.stockChanged(skuId, warehouseId);
         return reservation;
     }
 }

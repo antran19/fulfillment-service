@@ -15,13 +15,16 @@ public class CommitReservationUseCase {
     private final InventoryRecordRepositoryPort inventoryRecordRepositoryPort;
     private final ReservationRepositoryPort reservationRepositoryPort;
     private final InventoryLedgerRepositoryPort inventoryLedgerRepositoryPort;
+    private final InventoryLevelNotifier inventoryLevelNotifier;
 
     public CommitReservationUseCase(InventoryRecordRepositoryPort inventoryRecordRepositoryPort,
                                      ReservationRepositoryPort reservationRepositoryPort,
-                                     InventoryLedgerRepositoryPort inventoryLedgerRepositoryPort) {
+                                     InventoryLedgerRepositoryPort inventoryLedgerRepositoryPort,
+                                     InventoryLevelNotifier inventoryLevelNotifier) {
         this.inventoryRecordRepositoryPort = inventoryRecordRepositoryPort;
         this.reservationRepositoryPort = reservationRepositoryPort;
         this.inventoryLedgerRepositoryPort = inventoryLedgerRepositoryPort;
+        this.inventoryLevelNotifier = inventoryLevelNotifier;
     }
 
     // Idempotent: committing an already-committed (or released) reservation is a no-op --
@@ -41,5 +44,6 @@ public class CommitReservationUseCase {
         inventoryLedgerRepositoryPort.record(InventoryLedgerEntry.record(LedgerMovementType.COMMIT,
                 reservation.getSkuId(), reservation.getWarehouseId(), reservation.getQuantity(),
                 reservation.getReferenceId()));
+        inventoryLevelNotifier.stockChanged(reservation.getSkuId(), reservation.getWarehouseId());
     }
 }

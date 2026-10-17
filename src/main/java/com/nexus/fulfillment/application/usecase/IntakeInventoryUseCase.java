@@ -14,11 +14,14 @@ public class IntakeInventoryUseCase {
 
     private final InventoryRecordRepositoryPort inventoryRecordRepositoryPort;
     private final InventoryLedgerRepositoryPort inventoryLedgerRepositoryPort;
+    private final InventoryLevelNotifier inventoryLevelNotifier;
 
     public IntakeInventoryUseCase(InventoryRecordRepositoryPort inventoryRecordRepositoryPort,
-                                   InventoryLedgerRepositoryPort inventoryLedgerRepositoryPort) {
+                                   InventoryLedgerRepositoryPort inventoryLedgerRepositoryPort,
+                                   InventoryLevelNotifier inventoryLevelNotifier) {
         this.inventoryRecordRepositoryPort = inventoryRecordRepositoryPort;
         this.inventoryLedgerRepositoryPort = inventoryLedgerRepositoryPort;
+        this.inventoryLevelNotifier = inventoryLevelNotifier;
     }
 
     @Transactional
@@ -29,5 +32,6 @@ public class IntakeInventoryUseCase {
         inventoryRecordRepositoryPort.intake(skuId, warehouseId, quantity);
         inventoryLedgerRepositoryPort.record(
                 InventoryLedgerEntry.record(LedgerMovementType.INTAKE, skuId, warehouseId, quantity, null));
+        inventoryLevelNotifier.stockChanged(skuId, warehouseId);
     }
 }

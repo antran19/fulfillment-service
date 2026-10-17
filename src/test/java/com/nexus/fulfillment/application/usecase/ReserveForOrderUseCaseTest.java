@@ -22,6 +22,8 @@ import static org.mockito.Mockito.*;
 
 class ReserveForOrderUseCaseTest {
 
+    private final InventoryLevelNotifier inventoryLevelNotifier = mock(InventoryLevelNotifier.class);
+
     private InventoryRecordRepositoryPort inventoryRecordRepositoryPort;
     private ReservationRepositoryPort reservationRepositoryPort;
     private InventoryLedgerRepositoryPort inventoryLedgerRepositoryPort;
@@ -35,7 +37,7 @@ class ReserveForOrderUseCaseTest {
         inventoryLedgerRepositoryPort = mock(InventoryLedgerRepositoryPort.class);
         eventPublisherPort = mock(EventPublisherPort.class);
         ReserveInventoryUseCase reserveInventoryUseCase = new ReserveInventoryUseCase(inventoryRecordRepositoryPort,
-                reservationRepositoryPort, inventoryLedgerRepositoryPort);
+                reservationRepositoryPort, inventoryLedgerRepositoryPort, inventoryLevelNotifier);
         useCase = new ReserveForOrderUseCase(reserveInventoryUseCase, eventPublisherPort);
         when(reservationRepositoryPort.findByReferenceId(any())).thenReturn(Optional.empty());
         when(reservationRepositoryPort.save(any(Reservation.class))).thenAnswer(inv -> inv.getArgument(0));

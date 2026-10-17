@@ -14,11 +14,14 @@ import static org.mockito.Mockito.*;
 
 class CommitReservationsForOrderUseCaseTest {
 
+    private final InventoryLevelNotifier inventoryLevelNotifier = mock(InventoryLevelNotifier.class);
+
     private final InventoryRecordRepositoryPort inventoryRecordRepositoryPort = mock(InventoryRecordRepositoryPort.class);
     private final ReservationRepositoryPort reservationRepositoryPort = mock(ReservationRepositoryPort.class);
     private final InventoryLedgerRepositoryPort inventoryLedgerRepositoryPort = mock(InventoryLedgerRepositoryPort.class);
     private final CommitReservationUseCase commitReservationUseCase = new CommitReservationUseCase(
-            inventoryRecordRepositoryPort, reservationRepositoryPort, inventoryLedgerRepositoryPort);
+            inventoryRecordRepositoryPort, reservationRepositoryPort, inventoryLedgerRepositoryPort,
+            inventoryLevelNotifier);
     private final CommitReservationsForOrderUseCase useCase =
             new CommitReservationsForOrderUseCase(reservationRepositoryPort, commitReservationUseCase);
 

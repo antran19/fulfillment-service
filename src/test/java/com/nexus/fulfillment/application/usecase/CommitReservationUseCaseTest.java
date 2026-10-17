@@ -18,6 +18,8 @@ import static org.mockito.Mockito.*;
 
 class CommitReservationUseCaseTest {
 
+    private final InventoryLevelNotifier inventoryLevelNotifier = mock(InventoryLevelNotifier.class);
+
     private InventoryRecordRepositoryPort inventoryRecordRepositoryPort;
     private ReservationRepositoryPort reservationRepositoryPort;
     private InventoryLedgerRepositoryPort inventoryLedgerRepositoryPort;
@@ -29,7 +31,7 @@ class CommitReservationUseCaseTest {
         reservationRepositoryPort = mock(ReservationRepositoryPort.class);
         inventoryLedgerRepositoryPort = mock(InventoryLedgerRepositoryPort.class);
         useCase = new CommitReservationUseCase(inventoryRecordRepositoryPort, reservationRepositoryPort,
-                inventoryLedgerRepositoryPort);
+                inventoryLedgerRepositoryPort, inventoryLevelNotifier);
         when(reservationRepositoryPort.save(any(Reservation.class))).thenAnswer(inv -> inv.getArgument(0));
     }
 
@@ -43,6 +45,7 @@ class CommitReservationUseCaseTest {
         verify(inventoryRecordRepositoryPort).commit("sku-1", "MAIN", 2);
         verify(reservationRepositoryPort).save(argThat(r -> r.getStatus() == ReservationStatus.COMMITTED));
         verify(inventoryLedgerRepositoryPort).record(any());
+        verify(inventoryLevelNotifier).stockChanged("sku-1", "MAIN");
     }
 
     @Test
@@ -54,6 +57,7 @@ class CommitReservationUseCaseTest {
 
         verify(inventoryRecordRepositoryPort, never()).commit(any(), any(), anyInt());
         verify(reservationRepositoryPort, never()).save(any());
+        verify(inventoryLevelNotifier, never()).stockChanged(any(), any());
     }
 
     @Test

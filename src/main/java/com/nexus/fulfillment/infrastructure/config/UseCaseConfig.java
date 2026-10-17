@@ -14,32 +14,43 @@ public class UseCaseConfig {
 
     @Bean
     public IntakeInventoryUseCase intakeInventoryUseCase(InventoryRecordRepositoryPort inventoryRecordRepositoryPort,
-                                                            InventoryLedgerRepositoryPort inventoryLedgerRepositoryPort) {
-        return new IntakeInventoryUseCase(inventoryRecordRepositoryPort, inventoryLedgerRepositoryPort);
+                                                            InventoryLedgerRepositoryPort inventoryLedgerRepositoryPort,
+                                                            InventoryLevelNotifier inventoryLevelNotifier) {
+        return new IntakeInventoryUseCase(inventoryRecordRepositoryPort, inventoryLedgerRepositoryPort,
+                inventoryLevelNotifier);
+    }
+
+    @Bean
+    public InventoryLevelNotifier inventoryLevelNotifier(InventoryRecordRepositoryPort inventoryRecordRepositoryPort,
+                                                         EventPublisherPort eventPublisherPort) {
+        return new InventoryLevelNotifier(inventoryRecordRepositoryPort, eventPublisherPort);
     }
 
     @Bean
     public ReserveInventoryUseCase reserveInventoryUseCase(InventoryRecordRepositoryPort inventoryRecordRepositoryPort,
                                                               ReservationRepositoryPort reservationRepositoryPort,
-                                                              InventoryLedgerRepositoryPort inventoryLedgerRepositoryPort) {
+                                                              InventoryLedgerRepositoryPort inventoryLedgerRepositoryPort,
+                                                              InventoryLevelNotifier inventoryLevelNotifier) {
         return new ReserveInventoryUseCase(inventoryRecordRepositoryPort, reservationRepositoryPort,
-                inventoryLedgerRepositoryPort);
+                inventoryLedgerRepositoryPort, inventoryLevelNotifier);
     }
 
     @Bean
     public CommitReservationUseCase commitReservationUseCase(InventoryRecordRepositoryPort inventoryRecordRepositoryPort,
                                                                 ReservationRepositoryPort reservationRepositoryPort,
-                                                                InventoryLedgerRepositoryPort inventoryLedgerRepositoryPort) {
+                                                                InventoryLedgerRepositoryPort inventoryLedgerRepositoryPort,
+                                                                InventoryLevelNotifier inventoryLevelNotifier) {
         return new CommitReservationUseCase(inventoryRecordRepositoryPort, reservationRepositoryPort,
-                inventoryLedgerRepositoryPort);
+                inventoryLedgerRepositoryPort, inventoryLevelNotifier);
     }
 
     @Bean
     public ReleaseReservationUseCase releaseReservationUseCase(InventoryRecordRepositoryPort inventoryRecordRepositoryPort,
                                                                   ReservationRepositoryPort reservationRepositoryPort,
-                                                                  InventoryLedgerRepositoryPort inventoryLedgerRepositoryPort) {
+                                                                  InventoryLedgerRepositoryPort inventoryLedgerRepositoryPort,
+                                                                  InventoryLevelNotifier inventoryLevelNotifier) {
         return new ReleaseReservationUseCase(inventoryRecordRepositoryPort, reservationRepositoryPort,
-                inventoryLedgerRepositoryPort);
+                inventoryLedgerRepositoryPort, inventoryLevelNotifier);
     }
 
     @Bean

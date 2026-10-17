@@ -18,6 +18,8 @@ import static org.mockito.Mockito.*;
 
 class ReserveInventoryUseCaseTest {
 
+    private final InventoryLevelNotifier inventoryLevelNotifier = mock(InventoryLevelNotifier.class);
+
     private InventoryRecordRepositoryPort inventoryRecordRepositoryPort;
     private ReservationRepositoryPort reservationRepositoryPort;
     private InventoryLedgerRepositoryPort inventoryLedgerRepositoryPort;
@@ -29,7 +31,7 @@ class ReserveInventoryUseCaseTest {
         reservationRepositoryPort = mock(ReservationRepositoryPort.class);
         inventoryLedgerRepositoryPort = mock(InventoryLedgerRepositoryPort.class);
         useCase = new ReserveInventoryUseCase(inventoryRecordRepositoryPort, reservationRepositoryPort,
-                inventoryLedgerRepositoryPort);
+                inventoryLedgerRepositoryPort, inventoryLevelNotifier);
         when(reservationRepositoryPort.save(any(Reservation.class))).thenAnswer(inv -> inv.getArgument(0));
     }
 
@@ -43,6 +45,7 @@ class ReserveInventoryUseCaseTest {
         assertThat(reservation.getReferenceId()).isEqualTo("order-1:sku-1");
         verify(reservationRepositoryPort).save(any(Reservation.class));
         verify(inventoryLedgerRepositoryPort).record(argThat(e -> e.getQuantity() == 2));
+        verify(inventoryLevelNotifier).stockChanged("sku-1", "MAIN");
     }
 
     @Test
@@ -55,6 +58,7 @@ class ReserveInventoryUseCaseTest {
 
         verify(reservationRepositoryPort, never()).save(any());
         verify(inventoryLedgerRepositoryPort, never()).record(any());
+        verify(inventoryLevelNotifier, never()).stockChanged(any(), any());
     }
 
     @Test
@@ -66,6 +70,7 @@ class ReserveInventoryUseCaseTest {
 
         assertThat(result).isEqualTo(existing);
         verify(inventoryRecordRepositoryPort, never()).tryReserve(any(), any(), anyInt());
+        verify(inventoryLevelNotifier, never()).stockChanged(any(), any());
         verify(reservationRepositoryPort, never()).save(any());
     }
 
