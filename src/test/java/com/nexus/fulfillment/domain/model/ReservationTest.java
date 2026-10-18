@@ -61,4 +61,22 @@ class ReservationTest {
         assertThat(reservation.isExpired(Instant.now())).isTrue();
         assertThat(reservation.commit().isExpired(Instant.now())).isFalse();
     }
+
+    @Test
+    void create_holdsAnOrderFor35Minutes_longerThanCommercesOwn30MinuteUnpaidCancel() {
+        // A hold that lapsed first would be released while the buyer can still pay, and the
+        // payment's commit would then be a no-op: the stock would never be taken.
+        Reservation reservation = Reservation.create("order-1:sku-1", "sku-1", "MAIN", 1);
+
+        assertThat(java.time.Duration.between(reservation.getCreatedAt(), reservation.getExpiresAt()))
+                .isEqualTo(java.time.Duration.ofMinutes(35));
+    }
+
+    @Test
+    void create_withAnExplicitHold_usesIt() {
+        Reservation reservation = Reservation.create("auction:a-1", "sku-1", "MAIN", 1, java.time.Duration.ofDays(10));
+
+        assertThat(java.time.Duration.between(reservation.getCreatedAt(), reservation.getExpiresAt()))
+                .isEqualTo(java.time.Duration.ofDays(10));
+    }
 }

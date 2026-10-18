@@ -6,9 +6,11 @@ import com.nexus.common.events.OrderCancelledEvent;
 import com.nexus.common.events.OrderPaidEvent;
 import com.nexus.common.events.OrderReturnReceivedEvent;
 import com.nexus.fulfillment.application.exception.InsufficientInventoryException;
+import com.nexus.fulfillment.application.usecase.CommitAuctionHoldUseCase;
 import com.nexus.fulfillment.application.usecase.CommitReservationsForOrderUseCase;
 import com.nexus.fulfillment.application.usecase.FailOrderReservationUseCase;
 import com.nexus.fulfillment.application.usecase.IntakeForReturnUseCase;
+import com.nexus.fulfillment.application.usecase.ReleaseAuctionHoldUseCase;
 import com.nexus.fulfillment.application.usecase.ReleaseReservationsForOrderUseCase;
 import com.nexus.fulfillment.application.usecase.ReserveForOrderUseCase;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -28,18 +30,24 @@ public class CommerceEventsListener {
     private final CommitReservationsForOrderUseCase commitReservationsForOrderUseCase;
     private final ReleaseReservationsForOrderUseCase releaseReservationsForOrderUseCase;
     private final IntakeForReturnUseCase intakeForReturnUseCase;
+    private final CommitAuctionHoldUseCase commitAuctionHoldUseCase;
+    private final ReleaseAuctionHoldUseCase releaseAuctionHoldUseCase;
 
     public CommerceEventsListener(ObjectMapper objectMapper, ReserveForOrderUseCase reserveForOrderUseCase,
                                    FailOrderReservationUseCase failOrderReservationUseCase,
                                    CommitReservationsForOrderUseCase commitReservationsForOrderUseCase,
                                    ReleaseReservationsForOrderUseCase releaseReservationsForOrderUseCase,
-                                   IntakeForReturnUseCase intakeForReturnUseCase) {
+                                   IntakeForReturnUseCase intakeForReturnUseCase,
+                                   CommitAuctionHoldUseCase commitAuctionHoldUseCase,
+                                   ReleaseAuctionHoldUseCase releaseAuctionHoldUseCase) {
         this.objectMapper = objectMapper;
         this.reserveForOrderUseCase = reserveForOrderUseCase;
         this.failOrderReservationUseCase = failOrderReservationUseCase;
         this.commitReservationsForOrderUseCase = commitReservationsForOrderUseCase;
         this.releaseReservationsForOrderUseCase = releaseReservationsForOrderUseCase;
         this.intakeForReturnUseCase = intakeForReturnUseCase;
+        this.commitAuctionHoldUseCase = commitAuctionHoldUseCase;
+        this.releaseAuctionHoldUseCase = releaseAuctionHoldUseCase;
     }
 
     // Exceptions are NOT caught here on purpose: KafkaErrorHandlingConfig retries them, then
@@ -52,10 +60,18 @@ public class CommerceEventsListener {
             case "OrderPaid" -> {
                 OrderPaidEvent event = objectMapper.readValue(rawPayload, OrderPaidEvent.class);
                 commitReservationsForOrderUseCase.commitForOrder(event.getOrderId());
+                // An auction order has no line-item hold of its own: its unit has been held for
+                // the auction since it was created (see HoldForAuctionUseCase).
+                if (event.getAuctionId() != null) {
+                    commitAuctionHoldUseCase.commit(event.getAuctionId());
+                }
             }
             case "OrderCancelled" -> {
                 OrderCancelledEvent event = objectMapper.readValue(rawPayload, OrderCancelledEvent.class);
                 releaseReservationsForOrderUseCase.releaseForOrder(event.getOrderId());
+                if (event.getAuctionId() != null) {
+                    releaseAuctionHoldUseCase.release(event.getAuctionId());
+                }
             }
             // Restocking an order's items -- whether commerce-service fires this right away
             // (refund on an order that never shipped) or later once an Admin confirms a

@@ -6,9 +6,12 @@ import java.util.UUID;
 
 public class Reservation {
 
-    // Checkout/auction-settlement window: long enough to complete payment, short enough
-    // that abandoned reservations don't tie up stock for long. See ExpireReservationsJob.
-    private static final Duration TTL = Duration.ofMinutes(15);
+    // Default hold, for an order's line items: it must outlive commerce-service's own 30-minute
+    // unpaid-order cancel (which releases the hold through OrderCancelled), or a hold could lapse
+    // while the buyer can still pay -- the payment's commit would then be a no-op and the stock
+    // never taken. It is only the safety net for a hold nobody ever releases. See
+    // ExpireReservationsJob. A unit held for an auction passes its own, longer hold.
+    public static final Duration DEFAULT_HOLD = Duration.ofMinutes(35);
 
     private final String id;
     private final String referenceId;
@@ -32,9 +35,14 @@ public class Reservation {
     }
 
     public static Reservation create(String referenceId, String skuId, String warehouseId, int quantity) {
+        return create(referenceId, skuId, warehouseId, quantity, DEFAULT_HOLD);
+    }
+
+    public static Reservation create(String referenceId, String skuId, String warehouseId, int quantity,
+                                     Duration hold) {
         Instant now = Instant.now();
         return new Reservation(UUID.randomUUID().toString(), referenceId, skuId, warehouseId, quantity,
-                ReservationStatus.PENDING, now.plus(TTL), now);
+                ReservationStatus.PENDING, now.plus(hold), now);
     }
 
     public static Reservation reconstitute(String id, String referenceId, String skuId, String warehouseId,

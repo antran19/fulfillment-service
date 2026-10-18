@@ -81,4 +81,15 @@ class ReserveInventoryUseCaseTest {
 
         verify(reservationRepositoryPort, never()).findByReferenceId(any());
     }
+
+    @Test
+    void reserve_withAHoldDuration_savesAReservationThatLastsThatLong() {
+        when(reservationRepositoryPort.findByReferenceId("auction:a-1")).thenReturn(java.util.Optional.empty());
+        when(inventoryRecordRepositoryPort.tryReserve("sku-1", "MAIN", 1)).thenReturn(true);
+
+        Reservation reservation = useCase.reserve("auction:a-1", "sku-1", "MAIN", 1, java.time.Duration.ofDays(10));
+
+        assertThat(java.time.Duration.between(reservation.getCreatedAt(), reservation.getExpiresAt()))
+                .isEqualTo(java.time.Duration.ofDays(10));
+    }
 }

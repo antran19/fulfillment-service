@@ -11,6 +11,7 @@ import com.nexus.fulfillment.domain.model.LedgerMovementType;
 import com.nexus.fulfillment.domain.model.Reservation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.List;
 
 public class ReserveInventoryUseCase {
@@ -39,6 +40,11 @@ public class ReserveInventoryUseCase {
     // real usage shows concurrent duplicate deliveries, not just sequential retries.
     @Transactional
     public Reservation reserve(String referenceId, String skuId, String warehouseId, int quantity) {
+        return reserve(referenceId, skuId, warehouseId, quantity, Reservation.DEFAULT_HOLD);
+    }
+
+    @Transactional
+    public Reservation reserve(String referenceId, String skuId, String warehouseId, int quantity, Duration hold) {
         if (quantity <= 0) {
             throw new ValidationException(List.of(new FieldError("quantity", "quantity must be greater than zero")));
         }
@@ -56,7 +62,8 @@ public class ReserveInventoryUseCase {
             throw new InsufficientInventoryException(skuId, warehouseId, quantity);
         }
 
-        Reservation reservation = reservationRepositoryPort.save(Reservation.create(referenceId, skuId, warehouseId, quantity));
+        Reservation reservation = reservationRepositoryPort.save(
+                Reservation.create(referenceId, skuId, warehouseId, quantity, hold));
         inventoryLedgerRepositoryPort.record(
                 InventoryLedgerEntry.record(LedgerMovementType.RESERVE, skuId, warehouseId, quantity, referenceId));
         inventoryLevelNotifier.stockChanged(skuId, warehouseId);

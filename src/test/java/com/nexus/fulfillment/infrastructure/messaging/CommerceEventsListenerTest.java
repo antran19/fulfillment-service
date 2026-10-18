@@ -3,9 +3,11 @@ package com.nexus.fulfillment.infrastructure.messaging;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.fulfillment.application.exception.InsufficientInventoryException;
+import com.nexus.fulfillment.application.usecase.CommitAuctionHoldUseCase;
 import com.nexus.fulfillment.application.usecase.CommitReservationsForOrderUseCase;
 import com.nexus.fulfillment.application.usecase.FailOrderReservationUseCase;
 import com.nexus.fulfillment.application.usecase.IntakeForReturnUseCase;
+import com.nexus.fulfillment.application.usecase.ReleaseAuctionHoldUseCase;
 import com.nexus.fulfillment.application.usecase.ReleaseReservationsForOrderUseCase;
 import com.nexus.fulfillment.application.usecase.ReserveForOrderUseCase;
 import org.junit.jupiter.api.Test;
@@ -26,9 +28,11 @@ class CommerceEventsListenerTest {
     private final ReleaseReservationsForOrderUseCase releaseReservationsForOrderUseCase =
             mock(ReleaseReservationsForOrderUseCase.class);
     private final IntakeForReturnUseCase intakeForReturnUseCase = mock(IntakeForReturnUseCase.class);
+    private final CommitAuctionHoldUseCase commitAuctionHoldUseCase = mock(CommitAuctionHoldUseCase.class);
+    private final ReleaseAuctionHoldUseCase releaseAuctionHoldUseCase = mock(ReleaseAuctionHoldUseCase.class);
     private final CommerceEventsListener listener = new CommerceEventsListener(objectMapper, reserveForOrderUseCase,
             failOrderReservationUseCase, commitReservationsForOrderUseCase, releaseReservationsForOrderUseCase,
-            intakeForReturnUseCase);
+            intakeForReturnUseCase, commitAuctionHoldUseCase, releaseAuctionHoldUseCase);
 
     @Test
     void onMessage_reservationRequested_reservesForTheOrder() throws Exception {
@@ -116,5 +120,30 @@ class CommerceEventsListenerTest {
     void onMessage_malformedPayload_throwsSoItGoesToDeadLetterTopic() throws Exception {
         assertThatThrownBy(() -> listener.onMessage("{not valid json"))
                 .isInstanceOf(JsonProcessingException.class);
+    }
+
+    @Test
+    void onMessage_auctionOrderPaid_commitsTheUnitHeldForTheAuction() throws Exception {
+        listener.onMessage("{\"eventId\":\"e-9\",\"eventType\":\"OrderPaid\",\"occurredAt\":\"2026-01-01T00:00:00Z\","
+                + "\"aggregateId\":\"order-9\",\"orderId\":\"order-9\",\"auctionId\":\"auction-9\",\"buyerId\":\"b\","
+                + "\"sellerId\":\"s\",\"amount\":10,\"paidAt\":\"2026-01-01T00:00:00Z\"}");
+
+        verify(commitAuctionHoldUseCase).commit("auction-9");
+    }
+
+    @Test
+    void onMessage_auctionOrderCancelled_releasesTheUnitHeldForTheAuction() throws Exception {
+        listener.onMessage("{\"eventId\":\"e-10\",\"eventType\":\"OrderCancelled\",\"occurredAt\":\"2026-01-01T00:00:00Z\","
+                + "\"aggregateId\":\"order-9\",\"orderId\":\"order-9\",\"reason\":\"BUYER_REQUESTED\",\"auctionId\":\"auction-9\"}");
+
+        verify(releaseAuctionHoldUseCase).release("auction-9");
+    }
+
+    @Test
+    void onMessage_directOrderEvents_doNotTouchAuctionHolds() throws Exception {
+        listener.onMessage("{\"eventId\":\"e-11\",\"eventType\":\"OrderCancelled\",\"occurredAt\":\"2026-01-01T00:00:00Z\","
+                + "\"aggregateId\":\"order-1\",\"orderId\":\"order-1\",\"reason\":\"BUYER_REQUESTED\",\"auctionId\":null}");
+
+        verifyNoInteractions(releaseAuctionHoldUseCase, commitAuctionHoldUseCase);
     }
 }

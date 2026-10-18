@@ -87,6 +87,24 @@ public class UseCaseConfig {
     }
 
     @Bean
+    public HoldForAuctionUseCase holdForAuctionUseCase(ReserveInventoryUseCase reserveInventoryUseCase,
+                                                       EventPublisherPort eventPublisherPort) {
+        return new HoldForAuctionUseCase(reserveInventoryUseCase, eventPublisherPort);
+    }
+
+    @Bean
+    public ReleaseAuctionHoldUseCase releaseAuctionHoldUseCase(ReservationRepositoryPort reservationRepositoryPort,
+                                                               ReleaseReservationUseCase releaseReservationUseCase) {
+        return new ReleaseAuctionHoldUseCase(reservationRepositoryPort, releaseReservationUseCase);
+    }
+
+    @Bean
+    public CommitAuctionHoldUseCase commitAuctionHoldUseCase(ReservationRepositoryPort reservationRepositoryPort,
+                                                             CommitReservationUseCase commitReservationUseCase) {
+        return new CommitAuctionHoldUseCase(reservationRepositoryPort, commitReservationUseCase);
+    }
+
+    @Bean
     public RegisterProductStockUseCase registerProductStockUseCase(
             ProductStockOwnerRepositoryPort productStockOwnerRepositoryPort,
             IntakeInventoryUseCase intakeInventoryUseCase) {
