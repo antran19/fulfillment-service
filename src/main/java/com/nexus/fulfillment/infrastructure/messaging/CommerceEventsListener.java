@@ -50,7 +50,7 @@ public class CommerceEventsListener {
         this.releaseAuctionHoldUseCase = releaseAuctionHoldUseCase;
     }
 
-    // Exceptions are NOT caught here on purpose: KafkaErrorHandlingConfig retries them, then
+    // Exceptions are NOT caught here on purpose: NexusKafkaAutoConfiguration (common-kafka) retries them, then
     // moves the record to the dead-letter topic instead of losing it.
     @KafkaListener(topics = "commerce-events")
     public void onMessage(String rawPayload) throws Exception {

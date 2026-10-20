@@ -27,7 +27,7 @@ public class AuctionEventsListener {
 
     // auto.offset.reset=latest, unlike this service's other listeners: the first time this group
     // reads auction-events it must NOT replay the whole history, or it would try to hold stock
-    // for every auction that ever ran. Exceptions are NOT caught: KafkaErrorHandlingConfig
+    // for every auction that ever ran. Exceptions are NOT caught: NexusKafkaAutoConfiguration (common-kafka)
     // retries them, then moves the record to the dead-letter topic.
     @KafkaListener(topics = "auction-events", properties = "auto.offset.reset=latest")
     public void onMessage(String rawPayload) throws JsonProcessingException {
